@@ -38,17 +38,27 @@ frontend stats
 
 frontend fe_web
    bind *:80
-   use_backend be_gup_frontend_lab if { hdr(host) -i gup-lab.ub.gu.se }
-   use_backend be_gup_backend_lab if { hdr(host) -i api.gup-lab.ub.gu.se }
-   default_backend be_gup_backend_lab
+   {{- range $i, $service := services "@gubdc1"}}
+     {{- if $service.Tags | contains "haproxy"}}
+       {{- if $service.Name | regexMatch "-sidecar-proxy$" | not }}
+         {{- range service $service.Name -}}
+           {{scratch.Set "hostname" .ServiceMeta.hostname}}
+         {{- end}}
+   use_backend {{$service.Name | replaceAll "-" "_"}} if { hdr(host) -i {{scratch.Get "hostname"}} }
+       {{- end}}
+     {{- end}}
+   {{- end}}
+   default_backend gup_frontend_lab
 
-backend be_gup_frontend_lab
-    balance roundrobin
-    server-template gup-frontend 3 _gup-frontend-lab._tcp.service.consul resolvers consul resolve-opts allow-dup-ip resolve-prefer ipv4 check
-
-backend be_gup_backend_lab
-    balance roundrobin
-    server-template gup-api 3 _gup-api-lab._tcp.service.consul resolvers consul resolve-opts allow-dup-ip resolve-prefer ipv4 check
+{{range $i, $service := services "@gubdc1"}}
+  {{- if $service.Tags | contains "haproxy"}}
+    {{- if $service.Name | regexMatch "-sidecar-proxy$" | not }}
+backend {{ $service.Name | replaceAll "-" "_"}}
+  balance roundrobin
+  server-template {{$service.Name}} 3 _{{$service.Name}}._tcp.service.consul resolvers consul resolve-opts allow-dup-ip resolve-prefer ipv4 check
+    {{end}}
+  {{- end}}
+{{- end}}
 
 resolvers consul
   nameserver consul 127.0.0.1:8600
