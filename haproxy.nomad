@@ -40,10 +40,7 @@ frontend fe_web
   bind *:80
   {{- range $service := services "@gubdc1"}}
     {{- if $service.Tags | contains "haproxy"}}
-      {{- range service $service.Name -}}
-        {{scratch.Set "hostname" .ServiceMeta.hostname}}
-      {{- end}}
-  use_backend {{$service.Name | replaceAll "-" "_"}} if { hdr(host) -i {{scratch.Get "hostname"}} }
+  use_backend {{$service.Name | replaceAll "-" "_"}} if { hdr(host) -i {{ with service $service.Name }}{{- with index . 0}}{{.ServiceMeta.hostname}}{{- end}}{{- end}} }
     {{- end}}
   {{- end}}
   default_backend gup_frontend_lab
