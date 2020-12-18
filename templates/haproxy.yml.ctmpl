@@ -1,0 +1,7 @@
+---
+vault_certs:
+{{- range $service := services "@gubdc1"}}
+  {{- if $service.Tags | contains "haproxy"}}
+  - {{$service.Name | replaceAll "-" "_"}}
+  {{- end}}
+{{- end}}

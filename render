@@ -1,0 +1,3 @@
+# Generete levant vars from consul service metadata
+consul-template -template "templates/haproxy.yml.ctmpl:vars/haproxy.yml" -once
+levant render -var-file=vars/haproxy.yml templates/haproxy-template.nomad > haproxy.nomad
